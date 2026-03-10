@@ -4,3 +4,6 @@ numpy
 pandas
 joblib
 scikit-learn
+tensorflow
+xgboost
+ucimlrepo

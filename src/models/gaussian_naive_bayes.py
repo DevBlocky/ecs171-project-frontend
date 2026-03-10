@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from joblib import load
@@ -7,25 +9,25 @@ from src.artifacts import artifact_path
 from src.model_registry import Model, ModelResponse
 from src.preprocessing import align_feature_order, build_summary_feature_frame
 
-class LogisticRegressionModel(Model):
+
+class GaussianNaiveBayesModel(Model):
     __minfo: dict[str, Any]
 
     @property
     def label(self) -> str:
-        return "Logistic Regression"
+        return "Gaussian Naive Bayes"
 
     def __init__(self):
-        self.__minfo = load(artifact_path("logistic_regression.joblib"))
+        self.__minfo = load(artifact_path("gaussian_naive_bayes.joblib"))
 
     def ask(self, params: pd.DataFrame) -> ModelResponse:
         X = build_summary_feature_frame(params)
         X = align_feature_order(X, self.__minfo["feature_order"])
-        X[self.__minfo["scaled_cols"]] = self.__minfo["scaler"].transform(
-            X[self.__minfo["scaled_cols"]]
-        )
+        scaled_cols = self.__minfo["scaled_cols"]
+        X[scaled_cols] = self.__minfo["scaler"].transform(X[scaled_cols])
 
         probability = float(self.__minfo["model"].predict_proba(X)[0, 1])
-        defaults = probability >= self.__minfo["threshold"]
+        threshold = float(self.__minfo.get("threshold", 0.5))
+        defaults = probability >= threshold
         confidence = probability if defaults else 1 - probability
-
         return ModelResponse(label=self.label, defaults=defaults, confidence=confidence)
