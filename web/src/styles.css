@@ -41,9 +41,8 @@ select {
 }
 
 .app-shell {
-  width: min(1540px, calc(100vw - 1.5rem));
-  margin: 0 auto;
-  padding: 1.5rem 0 2rem;
+  width: full;
+  margin: 4rem 10rem;
 }
 
 .hero {
@@ -65,13 +64,12 @@ select {
 .hero h1 {
   margin: 0;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2.3rem, 5vw, 4.6rem);
+  font-size: 64px;
   line-height: 0.94;
   letter-spacing: -0.05em;
 }
 
 .hero-copy {
-  max-width: 58ch;
   margin: 0.9rem 0 0;
   color: var(--muted);
   font-size: 1.02rem;
