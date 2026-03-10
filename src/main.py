@@ -1,4 +1,5 @@
 from typing import Any
+from pathlib import Path
 import pandas as pd
 from fastapi import Body, FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -21,4 +22,6 @@ def ask_models(payload: dict[str, Any] = Body(...)) -> list[ModelResponse]:
 def ping() -> dict[str, str]:
     return {"status": "ok", "message": "pong"}
 
-app.mount("/", StaticFiles(directory="public/", html=True), name="public")
+web_dist = Path(__file__).resolve().parents[1] / "web" / "dist"
+if web_dist.exists():
+    app.mount("/", StaticFiles(directory=str(web_dist), html=True), name="web")
