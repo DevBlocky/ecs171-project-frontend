@@ -12,6 +12,13 @@ type PredictionResult = {
   confidence: number;
 };
 
+type SampleInputResponse = {
+  source: string;
+  row_index: number;
+  target: number;
+  record: Record<string, number>;
+};
+
 type FeatureValue = number | "";
 
 type FormState = Record<string, FeatureValue>;
@@ -38,12 +45,15 @@ type FieldDefinition = NumberField | SelectField;
 
 type FeatureGroup = {
   title: string;
+  tooltip: string;
   fields: FieldDefinition[];
 };
 
 const featureGroups: FeatureGroup[] = [
   {
     title: "Profile",
+    tooltip:
+      "Customer demographics and account context. LIMIT_BAL is the credit limit, while SEX, EDUCATION, MARRIAGE, and AGE provide profile information.",
     fields: [
       { key: "LIMIT_BAL", label: "Credit Limit", type: "number" },
       { key: "AGE", label: "Age", type: "number" },
@@ -85,6 +95,8 @@ const featureGroups: FeatureGroup[] = [
   },
   {
     title: "Repayment Status",
+    tooltip:
+      "Monthly repayment status for recent months. Positive PAY values indicate delayed payment, while 0 or negative values indicate on-time or early payment.",
     fields: ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"].map((key) => ({
       key,
       label: key,
@@ -93,6 +105,8 @@ const featureGroups: FeatureGroup[] = [
   },
   {
     title: "Bill Amounts",
+    tooltip:
+      "Credit card statement balances for the last six months. Higher balances can signal heavier utilization and repayment pressure.",
     fields: [1, 2, 3, 4, 5, 6].map((index) => ({
       key: `BILL_AMT${index}`,
       label: `Bill ${index}`,
@@ -101,6 +115,8 @@ const featureGroups: FeatureGroup[] = [
   },
   {
     title: "Payment Amounts",
+    tooltip:
+      "Actual payment amounts made across the last six months. These help show repayment behavior relative to the billed balances.",
     fields: [1, 2, 3, 4, 5, 6].map((index) => ({
       key: `PAY_AMT${index}`,
       label: `Payment ${index}`,
@@ -213,6 +229,7 @@ export default function App() {
   const [modelSummaries, setModelSummaries] = useState<ModelSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [sampleMessage, setSampleMessage] = useState("");
 
   useEffect(() => {
     const loadModels = async () => {
@@ -248,12 +265,40 @@ export default function App() {
       ...data,
     }));
     setErrorMessage("");
+    setSampleMessage("");
   };
 
   const resetForm = () => {
     setFormState(emptyFormState);
     setResults([]);
     setErrorMessage("");
+    setSampleMessage("");
+  };
+
+  const fillRandomSample = async () => {
+    setErrorMessage("");
+    try {
+      const response = await fetch("/sample-input");
+      if (!response.ok) {
+        throw new Error("Unable to load a random dataset sample.");
+      }
+      const data = (await response.json()) as SampleInputResponse;
+      setFormState((current) => ({
+        ...current,
+        ...data.record,
+      }));
+      setSampleMessage(
+        `Random sample loaded from ${data.source} row ${data.row_index}. Actual outcome: ${
+          data.target === 1 ? "Default" : "No Default"
+        }.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to load a random dataset sample.";
+      setErrorMessage(message);
+    }
   };
 
   const runPrediction = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -320,7 +365,7 @@ export default function App() {
 
       <main className="layout">
         <section className="panel form-panel">
-          <div className="panel-header">
+          <div className="panel-header panel-header-stacked">
             <div>
               <h2>Borrower Input</h2>
               <p>
@@ -328,7 +373,7 @@ export default function App() {
                 to the dataset fields used by the backend.
               </p>
             </div>
-            <div className="field-count">
+            <div className="field-count field-count-row">
               <span>Filled fields</span>
               <strong>
                 {completedFieldCount}/{featureKeys.length}
@@ -347,15 +392,29 @@ export default function App() {
                 {preset.name}
               </button>
             ))}
+            <button
+              className="preset-button accent-button"
+              type="button"
+              onClick={fillRandomSample}
+            >
+              Random Sample
+            </button>
             <button className="ghost-button" type="button" onClick={resetForm}>
               Clear
             </button>
           </div>
+          {sampleMessage ? <p className="sample-banner">{sampleMessage}</p> : null}
 
           <form className="input-form" onSubmit={runPrediction}>
             {featureGroups.map((group) => (
               <fieldset key={group.title} className="group-card">
-                <legend>{group.title}</legend>
+                <legend className="group-legend">
+                  <span>{group.title}</span>
+                  <span className="tooltip-wrap">
+                    <span className="tooltip-trigger">?</span>
+                    <span className="tooltip-bubble">{group.tooltip}</span>
+                  </span>
+                </legend>
                 <div className="field-grid">
                   {group.fields.map((field) => (
                     <label key={field.key} className="field">
@@ -470,10 +529,10 @@ export default function App() {
           <div className="notes-card">
             <h3>Presentation Notes</h3>
             <ul>
-              <li>Raw dataset: 30,000 rows and 23 predictors before one-hot encoding.</li>
-              <li>One-hot encoded base dataset: 30 predictors.</li>
-              <li>Engineered logistic feature set: 19 predictors.</li>
-              <li>Sex coding in this dataset is 1 = male and 2 = female.</li>
+              <li>30,000 rows and 23 raw predictors before one-hot encoding.</li>
+              <li>One-hot encoded base dataset expands to 30 predictors.</li>
+              <li>Logistic summary-feature set uses 19 predictors.</li>
+              <li>Sex coding is 1 = male and 2 = female.</li>
             </ul>
           </div>
         </aside>

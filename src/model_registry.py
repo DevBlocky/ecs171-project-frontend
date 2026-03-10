@@ -50,9 +50,13 @@ def get_models() -> Mapping[str, Model]:
                 ).XGBoostModel(),
             ),
         }
-        models = {
-            model_id: builder()
-            for model_id, (artifact, builder) in model_builders.items()
-            if artifact.exists()
-        }
+        loaded_models: dict[str, Model] = {}
+        for model_id, (artifact, builder) in model_builders.items():
+            if not artifact.exists():
+                continue
+            try:
+                loaded_models[model_id] = builder()
+            except Exception:
+                continue
+        models = loaded_models
     return models

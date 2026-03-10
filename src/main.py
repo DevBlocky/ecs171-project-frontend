@@ -4,6 +4,7 @@ import pandas as pd
 from fastapi import Body, FastAPI
 from fastapi.staticfiles import StaticFiles
 from src.model_registry import ModelResponse, get_models
+from src.sample_data import sample_input_row
 
 app = FastAPI(title="ECS171 Model Frontend")
 
@@ -21,6 +22,10 @@ def ask_models(payload: dict[str, Any] = Body(...)) -> list[ModelResponse]:
 @app.get("/ping")
 def ping() -> dict[str, str]:
     return {"status": "ok", "message": "pong"}
+
+@app.get("/sample-input")
+def get_sample_input() -> dict[str, object]:
+    return sample_input_row()
 
 web_dist = Path(__file__).resolve().parents[1] / "web" / "dist"
 if web_dist.exists():
