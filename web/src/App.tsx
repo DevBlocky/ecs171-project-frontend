@@ -419,30 +419,40 @@ export default function App() {
           </div>
 
           <div className="preset-row">
-            {presets.map((preset) => (
+            <div className="preset-actions">
+              {presets.map((preset) => (
+                <button
+                  key={preset.name}
+                  className="preset-button"
+                  type="button"
+                  onClick={() => loadPreset(preset)}
+                >
+                  {preset.label}
+                </button>
+              ))}
               <button
-                key={preset.name}
-                className="preset-button"
+                className="preset-button accent-button"
                 type="button"
-                onClick={() => loadPreset(preset)}
+                onClick={fillRandomSample}
               >
-                {preset.label}
+                Random Sample
               </button>
-            ))}
+              <button className="ghost-button" type="button" onClick={resetForm}>
+                Clear
+              </button>
+            </div>
             <button
-              className="preset-button accent-button"
-              type="button"
-              onClick={fillRandomSample}
+              className="primary-button top-run-button"
+              type="submit"
+              form="prediction-form"
+              disabled={isLoading}
             >
-              Random Sample
-            </button>
-            <button className="ghost-button" type="button" onClick={resetForm}>
-              Clear
+              {isLoading ? "Running..." : "Run Prediction"}
             </button>
           </div>
           {sampleMessage ? <p className="sample-banner">{sampleMessage}</p> : null}
 
-          <form className="input-form" onSubmit={runPrediction}>
+          <form className="input-form" id="prediction-form" onSubmit={runPrediction}>
             {featureGroups.map((group) => (
               <fieldset key={group.title} className="group-card">
                 <legend className="group-legend">
@@ -496,35 +506,11 @@ export default function App() {
               </fieldset>
             ))}
 
-            <div className="action-row">
-              <button className="primary-button" type="submit" disabled={isLoading}>
-                {isLoading ? "Running..." : "Run Prediction"}
-              </button>
-            </div>
           </form>
         </section>
 
         <aside className="sidebar-column">
           <div className="sidebar-stack">
-            <section className="hero-panel sidebar-summary">
-              <div>
-                <span className="metric-label">Dataset</span>
-                <strong>30,000 rows</strong>
-              </div>
-              <div>
-                <span className="metric-label">Raw Predictors</span>
-                <strong>23 features</strong>
-              </div>
-              <div>
-                <span className="metric-label">Target</span>
-                <strong>Default next month</strong>
-              </div>
-              <div>
-                <span className="metric-label">Current API Models</span>
-                <strong>{modelSummaries.length || 1}</strong>
-              </div>
-            </section>
-
             <section className="panel result-panel">
               <div className="panel-header">
                 <div>
@@ -537,9 +523,35 @@ export default function App() {
               </div>
 
               <div className="result-summary">
-                <div>
-                  <span className="metric-label">Available models</span>
-                  <strong>{modelSummaries.map((model) => model.label).join(", ") || "Loading..."}</strong>
+                <div className="result-summary-grid">
+                  <div>
+                    <span className="metric-label">Dataset</span>
+                    <strong>30,000 rows</strong>
+                  </div>
+                  <div>
+                    <span className="metric-label">Raw Predictors</span>
+                    <strong>23 features</strong>
+                  </div>
+                  <div>
+                    <span className="metric-label">Target</span>
+                    <strong>Default next month</strong>
+                  </div>
+                  <div>
+                    <span className="metric-label">Current API Models</span>
+                    <strong>{modelSummaries.length || 1}</strong>
+                  </div>
+                  <div className="result-summary-models">
+                    <span className="metric-label">Available models</span>
+                    <div className="model-list">
+                      {modelSummaries.length > 0 ? (
+                        modelSummaries.map((model) => (
+                          <strong key={model.id}>{model.label}</strong>
+                        ))
+                      ) : (
+                        <strong>Loading...</strong>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -584,15 +596,6 @@ export default function App() {
                 </table>
               </div>
 
-              <div className="notes-card">
-                <h3>Presentation Notes</h3>
-                <ul>
-                  <li>30,000 rows and 23 raw predictors before one-hot encoding.</li>
-                  <li>One-hot encoded base dataset expands to 30 predictors.</li>
-                  <li>Logistic summary-feature set uses 19 predictors.</li>
-                  <li>Sex coding is 1 = male and 2 = female.</li>
-                </ul>
-              </div>
             </section>
           </div>
         </aside>

@@ -77,8 +77,7 @@ select {
 
 .hero-panel,
 .panel,
-.group-card,
-.notes-card {
+.group-card {
   border: 1px solid var(--border);
   background: var(--panel);
   backdrop-filter: blur(14px);
@@ -117,7 +116,7 @@ select {
 
 .sidebar-column {
   min-width: 0;
-  align-self: start;
+  align-self: stretch;
 }
 
 .sidebar-stack {
@@ -132,10 +131,6 @@ select {
 .panel {
   border-radius: 30px;
   padding: 1.4rem;
-}
-
-.sidebar-summary {
-  margin: 0;
 }
 
 .panel-header {
@@ -171,6 +166,16 @@ select {
   border: 1px solid var(--border);
 }
 
+.result-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.result-summary-models {
+  grid-column: 1 / -1;
+}
+
 .field-count-row {
   width: 100%;
   display: flex;
@@ -180,9 +185,16 @@ select {
 
 .preset-row {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.2rem 0 1rem;
+}
+
+.preset-actions {
+  display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
-  margin: 1.2rem 0 1rem;
 }
 
 .preset-button,
@@ -214,6 +226,10 @@ select {
   box-shadow: 0 16px 28px rgba(31, 111, 120, 0.2);
 }
 
+.top-run-button {
+  flex: 0 0 auto;
+}
+
 .preset-button:hover,
 .ghost-button:hover,
 .primary-button:hover {
@@ -228,6 +244,12 @@ select {
 .input-form {
   display: grid;
   gap: 1rem;
+}
+
+.model-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 0.75rem;
 }
 
 .sample-banner {
@@ -397,27 +419,6 @@ th {
   color: var(--danger);
 }
 
-.notes-card {
-  margin-top: 1rem;
-  border-radius: 22px;
-  padding: 1rem 1.1rem;
-}
-
-.notes-card ul {
-  padding-left: 1.1rem;
-  margin: 0.8rem 0 0;
-}
-
-.notes-card li {
-  font-size: 0.95rem;
-}
-
-@media (min-width: 1101px) {
-  .notes-card li {
-    white-space: nowrap;
-  }
-}
-
 @media (max-width: 1100px) {
   .hero,
   .layout {
@@ -426,6 +427,23 @@ th {
 
   .sidebar-stack {
     position: static;
+  }
+
+  .result-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .model-list {
+    grid-template-columns: 1fr;
+  }
+
+  .preset-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .top-run-button {
+    width: 100%;
   }
 }
 

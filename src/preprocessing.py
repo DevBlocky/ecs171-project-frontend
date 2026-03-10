@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 TARGET_COLUMN = "default payment next month"
 CATEGORICAL_COLUMNS = ["SEX", "EDUCATION", "MARRIAGE"]
@@ -80,6 +81,53 @@ def apply_outlier_pruning(df: pd.DataFrame) -> pd.DataFrame:
 def build_clean_feature_frame(df: pd.DataFrame) -> pd.DataFrame:
     return pd.get_dummies(
         df.copy(),
+        columns=CATEGORICAL_COLUMNS,
+        drop_first=True,
+        dtype=int,
+    )
+
+
+def fit_clean_preprocessor(df: pd.DataFrame) -> dict[str, object]:
+    clean_df = apply_outlier_pruning(df).copy()
+    if "ID" in clean_df.columns:
+        clean_df = clean_df.drop(columns=["ID"])
+
+    excluded_columns = set(CATEGORICAL_COLUMNS + [TARGET_COLUMN] + PAY_STATUS_COLUMNS)
+    scaled_cols = [column for column in clean_df.columns if column not in excluded_columns]
+
+    scaler = StandardScaler()
+    clean_df[scaled_cols] = scaler.fit_transform(clean_df[scaled_cols].astype(float))
+    encoded_df = pd.get_dummies(
+        clean_df,
+        columns=CATEGORICAL_COLUMNS,
+        drop_first=True,
+        dtype=int,
+    )
+
+    X = encoded_df.drop(columns=[TARGET_COLUMN]).copy()
+    y = encoded_df[TARGET_COLUMN].copy()
+    return {
+        "scaler": scaler,
+        "scaled_cols": scaled_cols,
+        "feature_order": list(X.columns),
+        "X": X,
+        "y": y,
+    }
+
+
+def transform_clean_feature_frame(
+    df: pd.DataFrame,
+    scaler: StandardScaler,
+    scaled_cols: list[str],
+) -> pd.DataFrame:
+    clean_df = df.copy()
+    if "ID" in clean_df.columns:
+        clean_df = clean_df.drop(columns=["ID"])
+
+    present_scaled_cols = [column for column in scaled_cols if column in clean_df.columns]
+    clean_df[present_scaled_cols] = scaler.transform(clean_df[present_scaled_cols].astype(float))
+    return pd.get_dummies(
+        clean_df,
         columns=CATEGORICAL_COLUMNS,
         drop_first=True,
         dtype=int,

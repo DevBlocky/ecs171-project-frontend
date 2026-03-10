@@ -29,14 +29,14 @@ def get_models() -> Mapping[str, Model]:
                 LogisticRegressionModel,
             ),
             "gaussian_naive_bayes": (
-                Path(__file__).resolve().parents[1] / "artifacts" / "gaussian_naive_bayes.joblib",
+                Path(__file__).resolve().parents[1] / "artifacts" / "bayes_network.joblib",
                 lambda: __import__(
                     "src.models.gaussian_naive_bayes",
                     fromlist=["GaussianNaiveBayesModel"],
                 ).GaussianNaiveBayesModel(),
             ),
             "artificial_neural_network": (
-                Path(__file__).resolve().parents[1] / "artifacts" / "artificial_neural_network.joblib",
+                Path(__file__).resolve().parents[1] / "artifacts" / "neural_network.joblib",
                 lambda: __import__(
                     "src.models.neural_network",
                     fromlist=["NeuralNetworkModel"],
