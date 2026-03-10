@@ -19,6 +19,18 @@ type SampleInputResponse = {
   record: Record<string, number>;
 };
 
+type PresetInput = {
+  name: string;
+  label: string;
+  source: string;
+  row_index: number;
+  target: number;
+  reference_model: string;
+  reference_probability: number;
+  explanation: string;
+  record: Record<string, number>;
+};
+
 type FeatureValue = number | "";
 
 type FormState = Record<string, FeatureValue>;
@@ -134,10 +146,17 @@ const emptyFormState = featureKeys.reduce<FormState>((acc, key) => {
   return acc;
 }, {});
 
-const presets = [
+const fallbackPresets: PresetInput[] = [
   {
-    name: "High Risk",
-    data: {
+    name: "high_risk",
+    label: "High Risk",
+    source: "Manual fallback",
+    row_index: -1,
+    target: 1,
+    reference_model: "Fallback",
+    reference_probability: 0.8,
+    explanation: "Fallback preset used because grounded dataset presets could not be loaded.",
+    record: {
       LIMIT_BAL: 20000,
       SEX: 2,
       EDUCATION: 2,
@@ -164,8 +183,15 @@ const presets = [
     },
   },
   {
-    name: "Borderline",
-    data: {
+    name: "borderline",
+    label: "Borderline",
+    source: "Manual fallback",
+    row_index: -1,
+    target: 0,
+    reference_model: "Fallback",
+    reference_probability: 0.5,
+    explanation: "Fallback preset used because grounded dataset presets could not be loaded.",
+    record: {
       LIMIT_BAL: 120000,
       SEX: 2,
       EDUCATION: 2,
@@ -192,8 +218,15 @@ const presets = [
     },
   },
   {
-    name: "Lower Risk",
-    data: {
+    name: "lower_risk",
+    label: "Lower Risk",
+    source: "Manual fallback",
+    row_index: -1,
+    target: 0,
+    reference_model: "Fallback",
+    reference_probability: 0.1,
+    explanation: "Fallback preset used because grounded dataset presets could not be loaded.",
+    record: {
       LIMIT_BAL: 90000,
       SEX: 2,
       EDUCATION: 2,
@@ -227,6 +260,7 @@ export default function App() {
   const [formState, setFormState] = useState<FormState>(emptyFormState);
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [modelSummaries, setModelSummaries] = useState<ModelSummary[]>([]);
+  const [presets, setPresets] = useState<PresetInput[]>(fallbackPresets);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [sampleMessage, setSampleMessage] = useState("");
@@ -250,6 +284,25 @@ export default function App() {
     void loadModels();
   }, []);
 
+  useEffect(() => {
+    const loadPresets = async () => {
+      try {
+        const response = await fetch("/preset-inputs");
+        if (!response.ok) {
+          throw new Error("Unable to load grounded presets.");
+        }
+        const data = (await response.json()) as PresetInput[];
+        if (data.length > 0) {
+          setPresets(data);
+        }
+      } catch {
+        setPresets(fallbackPresets);
+      }
+    };
+
+    void loadPresets();
+  }, []);
+
   const completedFieldCount = useMemo(
     () => Object.values(formState).filter((value) => value !== "").length,
     [formState],
@@ -259,13 +312,17 @@ export default function App() {
     setFormState((current) => ({ ...current, [key]: value }));
   };
 
-  const loadPreset = (data: Record<string, number>) => {
+  const loadPreset = (preset: PresetInput) => {
     setFormState((current) => ({
       ...current,
-      ...data,
+      ...preset.record,
     }));
     setErrorMessage("");
-    setSampleMessage("");
+    setSampleMessage(
+      `${preset.label} preset grounded in ${preset.source}` +
+        (preset.row_index >= 0 ? ` row ${preset.row_index}. ` : ". ") +
+        `${preset.explanation}`,
+    );
   };
 
   const resetForm = () => {
@@ -335,32 +392,12 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="hero">
-        <div>
-          <p className="eyebrow">ECS171 Team 21</p>
-          <h1>Credit Default Prediction Demo</h1>
-          <p className="hero-copy">
-            Compare model outputs on the UCI credit default dataset using the
-            same borrower profile and repayment history.
-          </p>
-        </div>
-        <div className="hero-panel">
-          <div>
-            <span className="metric-label">Dataset</span>
-            <strong>30,000 rows</strong>
-          </div>
-          <div>
-            <span className="metric-label">Raw Predictors</span>
-            <strong>23 features</strong>
-          </div>
-          <div>
-            <span className="metric-label">Target</span>
-            <strong>Default next month</strong>
-          </div>
-          <div>
-            <span className="metric-label">Current API Models</span>
-            <strong>{modelSummaries.length || 1}</strong>
-          </div>
-        </div>
+        <p className="eyebrow">ECS171 Team 21</p>
+        <h1>Credit Default Prediction Demo</h1>
+        <p className="hero-copy">
+          Compare model outputs on the UCI credit default dataset using the
+          same borrower profile and repayment history.
+        </p>
       </header>
 
       <main className="layout">
@@ -387,9 +424,9 @@ export default function App() {
                 key={preset.name}
                 className="preset-button"
                 type="button"
-                onClick={() => loadPreset(preset.data)}
+                onClick={() => loadPreset(preset)}
               >
-                {preset.name}
+                {preset.label}
               </button>
             ))}
             <button
@@ -467,73 +504,96 @@ export default function App() {
           </form>
         </section>
 
-        <aside className="panel result-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Model Outputs</h2>
-              <p>
-                Results are stacked by model so you can compare the same input
-                across every registered predictor.
-              </p>
-            </div>
-          </div>
+        <aside className="sidebar-column">
+          <div className="sidebar-stack">
+            <section className="hero-panel sidebar-summary">
+              <div>
+                <span className="metric-label">Dataset</span>
+                <strong>30,000 rows</strong>
+              </div>
+              <div>
+                <span className="metric-label">Raw Predictors</span>
+                <strong>23 features</strong>
+              </div>
+              <div>
+                <span className="metric-label">Target</span>
+                <strong>Default next month</strong>
+              </div>
+              <div>
+                <span className="metric-label">Current API Models</span>
+                <strong>{modelSummaries.length || 1}</strong>
+              </div>
+            </section>
 
-          <div className="result-summary">
-            <div>
-              <span className="metric-label">Available models</span>
-              <strong>{modelSummaries.map((model) => model.label).join(", ") || "Loading..."}</strong>
-            </div>
-          </div>
+            <section className="panel result-panel">
+              <div className="panel-header">
+                <div>
+                  <h2>Model Outputs</h2>
+                  <p>
+                    Results are stacked by model so you can compare the same input
+                    across every registered predictor.
+                  </p>
+                </div>
+              </div>
 
-          {errorMessage ? <p className="error-banner">{errorMessage}</p> : null}
+              <div className="result-summary">
+                <div>
+                  <span className="metric-label">Available models</span>
+                  <strong>{modelSummaries.map((model) => model.label).join(", ") || "Loading..."}</strong>
+                </div>
+              </div>
 
-          <div className="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Prediction</th>
-                  <th>Confidence</th>
-                  <th>Risk</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.length > 0 ? (
-                  results.map((result) => (
-                    <tr key={result.label}>
-                      <td>{result.label}</td>
-                      <td>{result.defaults ? "Default" : "No Default"}</td>
-                      <td>{formatConfidence(result.confidence)}</td>
-                      <td>
-                        <span
-                          className={
-                            result.defaults ? "risk-chip danger" : "risk-chip safe"
-                          }
-                        >
-                          {result.defaults ? "High" : "Lower"}
-                        </span>
-                      </td>
+              {errorMessage ? <p className="error-banner">{errorMessage}</p> : null}
+
+              <div className="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Model</th>
+                      <th>Prediction</th>
+                      <th>Confidence</th>
+                      <th>Risk</th>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="empty-state">
-                      Run a prediction to populate the comparison table.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {results.length > 0 ? (
+                      results.map((result) => (
+                        <tr key={result.label}>
+                          <td>{result.label}</td>
+                          <td>{result.defaults ? "Default" : "No Default"}</td>
+                          <td>{formatConfidence(result.confidence)}</td>
+                          <td>
+                            <span
+                              className={
+                                result.defaults ? "risk-chip danger" : "risk-chip safe"
+                              }
+                            >
+                              {result.defaults ? "High" : "Lower"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="empty-state">
+                          Run a prediction to populate the comparison table.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-          <div className="notes-card">
-            <h3>Presentation Notes</h3>
-            <ul>
-              <li>30,000 rows and 23 raw predictors before one-hot encoding.</li>
-              <li>One-hot encoded base dataset expands to 30 predictors.</li>
-              <li>Logistic summary-feature set uses 19 predictors.</li>
-              <li>Sex coding is 1 = male and 2 = female.</li>
-            </ul>
+              <div className="notes-card">
+                <h3>Presentation Notes</h3>
+                <ul>
+                  <li>30,000 rows and 23 raw predictors before one-hot encoding.</li>
+                  <li>One-hot encoded base dataset expands to 30 predictors.</li>
+                  <li>Logistic summary-feature set uses 19 predictors.</li>
+                  <li>Sex coding is 1 = male and 2 = female.</li>
+                </ul>
+              </div>
+            </section>
           </div>
         </aside>
       </main>

@@ -41,16 +41,16 @@ select {
 }
 
 .app-shell {
-  width: full;
-  margin: 4rem 10rem;
+  width: min(1540px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 2rem;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
-  gap: 1.25rem;
-  align-items: stretch;
-  margin-bottom: 1.25rem;
+  justify-items: center;
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
 .eyebrow {
@@ -64,7 +64,7 @@ select {
 .hero h1 {
   margin: 0;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 64px;
+  font-size: clamp(3.2rem, 6vw, 5rem);
   line-height: 0.94;
   letter-spacing: -0.05em;
 }
@@ -115,9 +115,27 @@ select {
   align-items: start;
 }
 
+.sidebar-column {
+  min-width: 0;
+  align-self: start;
+}
+
+.sidebar-stack {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: 1.25rem;
+  align-self: start;
+  height: fit-content;
+}
+
 .panel {
   border-radius: 30px;
   padding: 1.4rem;
+}
+
+.sidebar-summary {
+  margin: 0;
 }
 
 .panel-header {
@@ -404,6 +422,10 @@ th {
   .hero,
   .layout {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar-stack {
+    position: static;
   }
 }
 

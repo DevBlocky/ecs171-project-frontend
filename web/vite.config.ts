@@ -8,6 +8,7 @@ export default defineConfig({
       "/models": "http://127.0.0.1:8000",
       "/ping": "http://127.0.0.1:8000",
       "/sample-input": "http://127.0.0.1:8000",
+      "/preset-inputs": "http://127.0.0.1:8000",
     },
   },
 });
